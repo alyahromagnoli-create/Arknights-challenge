@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arknights Protocol - 高级挑战终端 V4.0</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+        :root {
+            --ak-yellow: #f5d547;
+            --ak-dark: #1a1a1a;
+            --ak-gray: #2d2d2d;
+            --ak-light: #e0e0e0;
+            --ak-cyan: #00e5ff;
+            --ak-red: #ff3333;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            background-color: #0b0b0b;
+            color: var(--ak-light);
+            font-family: 'Share Tech Mono', "Microsoft YaHei", sans-serif;
+            overflow-x: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* 屏幕扫描线特效 */
+        .scanlines {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1));
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 900px;
+            background: var(--ak-dark);
+            padding: 40px;
+            position: relative;
+            border-left: 4px solid var(--ak-yellow);
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+            margin: 40px 0;
+        }
+
+        .container::before {
+            content: 'RHODES ISLAND';
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 80px;
+            color: rgba(255,255,255,0.02);
+            font-weight: bold;
+            pointer-events: none;
+        }
+
+        header {
+            margin-bottom: 25px;
+            border-bottom: 1px solid #444;
+            padding-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .title-box h1 {
+            margin: 0;
+            font-size: 36px;
+            color: var(--ak-light);
+            letter-spacing: 2px;
+        }
+
+        .title-box h2 {
+            margin: 5px 0 0 0;
+            font-size: 14px;
+            color: var(--ak-yellow);
+            letter-spacing: 5px;
+        }
+
+        /* 难度选择器 */
+        .mode-selector {
+            display: flex;
+            gap: 15px;
+            z-index: 10;
+        }
+
+        .mode-btn {
+            background: transparent;
+            border: 1px solid #555;
+            color: #888;
+            padding: 8px 20px;
+            font-family: 'Share Tech Mono', sans-serif;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+        }
+
+        .mode-btn.active[data-mode="easy"] {
+            background: var(--ak-cyan);
+            border-color: var(--ak-cyan);
+            color: var(--ak-dark);
+            box-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
+        }
+
+        .mode-btn.active[data-mode="hard"] {
+            background: var(--ak-red);
+            border-color: var(--ak-red);
+            color: #fff;
+            box-shadow: 0 0 10px rgba(255, 51, 51, 0.4);
+        }
+
+        .panel {
+            background: var(--ak-gray);
+            padding: 25px;
+            margin-bottom: 30px;
+            position: relative;
+            clip-path: polygon(0 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%);
+        }
+
+        .panel::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 15px;
+            height: 15px;
+            background: var(--ak-yellow);
+            transition: background 0.3s;
+        }
+
+        .panel.hard-mode-ui::after {
+            background: var(--ak-red);
+        }
+
+        .data-row {
+            margin-bottom: 25px;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .data-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .label {
+            color: #888;
+            width: 190px;
+            flex-shrink: 0;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .label span {
+            color: var(--ak-cyan);
+            margin-right: 5px;
+            transition: color 0.3s;
+        }
+
+        .panel.hard-mode-ui .label span {
+            color: var(--ak-red);
+        }
+
+        .value {
+            flex: 1;
+            font-size: 18px;
+            color: var(--ak-yellow);
+            font-weight: bold;
+            line-height: 1.6;
+            text-shadow: 0 0 5px rgba(245, 213, 71, 0.3);
+            word-wrap: break-word;
+        }
+
+        .value.red {
+            color: var(--ak-red);
+            text-shadow: 0 0 5px rgba(255, 51, 51, 0.3);
+        }
+
+        .btn-container {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .ak-btn {
+            background: var(--ak-light);
+            color: var(--ak-dark);
+            border: none;
+            padding: 15px 40px;
+            font-size: 16px;
+            font-weight: bold;
+            font-family: 'Share Tech Mono', sans-serif;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+            position: relative;
+        }
+
+        .ak-btn:hover {
+            background: var(--ak-yellow);
+            box-shadow: 0 0 15px var(--ak-yellow);
+            transform: translateY(-2px);
+        }
+
+        .ak-btn:active {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <div class="scanlines"></div>
+    <div class="container">
+        <header>
+            <div class="title-box">
+                <h1>PRTS_PROTOCOL</h1>
+                <h2>// TACTICAL CHALLENGE V4.0 (2026)</h2>
+            </div>
+            <div class="mode-selector">
+                <button class="mode-btn active" data-mode="easy">EASY // 基础</button>
+                <button class="mode-btn" data-mode="hard">HARD // 极限</button>
+            </div>
+        </header>
+
+        <div class="panel" id="main-panel">
+            <div class="data-row">
+                <div class="label"><span>></span> TARGET_OPERATION<br>&nbsp;&nbsp;作战目标:</div>
+                <div class="value" id="val-map">[ AWAITING SELECTION ]</div>
+            </div>
+            <div class="data-row">
+                <div class="label" id="label-rule"><span>></span> TACTICAL_RULE<br>&nbsp;&nbsp;限制协议:</div>
+                <div class="value" id="val-rule">[ AWAITING SELECTION ]</div>
+            </div>
+            <div class="data-row">
+                <div class="label"><span>></span> BLACKLIST_10<br>&nbsp;&nbsp;战术封锁 (Ban):</div>
+                <div class="value red" id="val-ban">[ AWAITING SELECTION ]</div>
+            </div>
+        </div>
+
+        <div class="btn-container">
+            <button class="ak-btn" id="generate-btn">INITIATE // 生成战术协议</button>
+        </div>
+    </div>
+
+    <script>
+        // --- 数据库 (全面扩充) ---
+        const databases = {
+            maps: [
+                "【当期活动】 EX-7 (突袭)", "【当期活动】 EX-8 (突袭)", "【当期活动】 S级压轴关卡",
+                "【主线难关】 4-4 (弑君者跑圈)", "【主线难关】 5-10 (浮士德/梅菲斯特)", 
+                "【主线难关】 6-16 (霜星)", "【主线难关】 7-18 (爱国者)", 
+                "【主线难关】 JT8-3 (塔露拉)", "【主线难关】 9-19 (蔓德拉)", 
+                "【主线难关】 10-17 (曼弗雷德)", "【主线难关】 11-15 (蒸汽骑士)", 
+                "【主线难关】 12-17 (变形者集群)", "【主线难关】 13-21 (血魔大君)", "【主线难关】 14-21 (巫妖)",
+                "【往期 SS】 愚人号 SN-EX-8", "【往期 SS】 孤星 CW-S-4", "【往期 SS】 崔林特尔梅之金 ZT-S-4",
+                "【往期 SS】 银心湖列车 RS-EX-8", "【往期 SS】 遗尘漫步 WD-EX-8", "【往期 SS】 画中人 WR-EX-8",
+                "【肉鸽模式】 水月与深蓝之树 (N8 难度)", "【肉鸽模式】 水月与深蓝之树 (N10 难度)",
+                "【肉鸽模式】 水月与深蓝之树 (N12 难度)", "【肉鸽模式】 水月与深蓝之树 (N15 难度)",
+                "【肉鸽模式】 探索者银凇止境 (N8 难度)", "【肉鸽模式】 探索者银凇止境 (N10 难度)",
+                "【肉鸽模式】 探索者银凇止境 (N12 难度)", "【肉鸽模式】 探索者银凇止境 (N15 难度)",
+                "【肉鸽模式】 萨卡兹的无终奇语 (N8 难度)", "【肉鸽模式】 萨卡兹的无终奇语 (N12 难度)", "【肉鸽模式】 萨卡兹的无终奇语 (N15 难度)",
+                "【肉鸽模式】 界园奇幻漂流[新肉鸽] (N8 难度)", "【肉鸽模式】 界园奇幻漂流[新肉鸽] (N12 难度)", "【肉鸽模式】 界园奇幻漂流[新肉鸽] (N15 难度)"
+            ],
+            easyRules: [
+                "1. 【无借用】禁止使用好友助战", "2. 【禁疗者】禁止编入任何常规医疗干员",
+                "3. 【限员令】编队总人数上限缩减至 8 人", "4. 【高台位】近战位仅限部署 3 名干员",
+                "5. 【地面战】高台位仅限部署 2 名干员", "6. 【阵营集结】全队必须有至少 4 人属于同一阵营",
+                "7. 【费用管控】全队平均部署费用不得超过 18", "8. 【新秀登场】队伍中至少包含 3 名 4星及以下干员",
+                "9. 【近卫荣耀】队伍中必须包含至少 3 名近卫", "10. 【重装防线】队伍中必须包含至少 3 名重装",
+                "11. 【术师轰炸】队伍中必须包含至少 3 名术师", "12. 【狙击阵地】队伍中必须包含至少 3 名狙击",
+                "13. 【特种空降】队伍中必须包含至少 3 名特种", "14. 【辅助支援】队伍中必须包含至少 3 名辅助",
+                "15. 【无召唤】禁止使用任何召唤物（含干员自带）", "16. 【同星级】队伍中所有干员必须为同一星级",
+                "17. 【非阻挡先锋】只能使用战术交锋或不阻挡的先锋", "18. 【男性干员】队伍中必须包含至少 4 名男性干员",
+                "19. 【女性联盟】全队只能由女性干员组成", "20. 【禁止漏怪】关卡必须完美通关，不可漏怪",
+                "21. 【非决战技】禁止携带玛恩纳、银灰、维什戴尔等大招", "22. 【慢节奏】所有干员只能携带自动回复/自动触发技能",
+                "23. 【单体输出】禁止携带任何群体物理/法术伤害的干员", "24. 【禁止重装】禁止编入任何重装干员",
+                "25. 【禁止近卫】禁止编入任何近卫干员", "26. 【纯法伤】所有输出干员必须造成法术伤害",
+                "27. 【纯物伤】所有输出干员必须造成物理伤害", "28. 【无减速】禁止使用任何具有停顿/束缚/晕眩的干员",
+                "29. 【原班人马】只能使用干员的初始默认服装，禁止穿戴皮肤", "30. 【快活限定】特种干员只能携带处决者（快速复活）"
+            ],
+            hardRules: [
+                "1. 【星级压制】队伍中绝对禁止出现任何 6星干员", "2. 【极致精简】编队总人数不得超过 5 人",
+                "3. 【平A战术】全场禁止主动开启任何干员的技能", "4. 【职业单一】全队只能由 1 种职业的干员组成",
+                "5. 【不许阻挡】禁止编入重装与近卫，且特种禁止阻挡", "6. 【绝食流】禁止使用任何形式的生命值恢复手段（含自回血）",
+                "7. 【孤岛战术】干员部署后，其周围四格（十字）内不能有友方干员", "8. 【背水一战】必须故意漏掉至少 1 个非首领敌人",
+                "9. 【先锋禁令】禁止编入任何先锋干员（严禁产费）", "10. 【方向锁定】干员部署后，朝向只能统一向左或向右",
+                "11. 【全近战】全队只能编入近战位干员", "12. 【全高台】全队只能编入高台位干员",
+                "13. 【三星通关】全队只能使用 3 星干员", "14. 【禁止撤退】干员一旦部署，直到战斗结束或被击倒前禁止主动撤退",
+                "15. 【接力跑】场上同时最多只能存在 3 名我方干员", "16. 【极限高压】所有干员的技能等级不得高于 7 级（禁止专精）",
+                "17. 【不准落地】禁止使用任何拥有“部署后立即生效”技能的干员", "18. 【费用干涸】禁止携带任何能够回复部署费用的干员或技能",
+                "19. 【血量锁定】通关时所有场上干员生命值必须满血，否则失败", "20. 【随机朝向】干员部署时的朝向必须由掷骰子（或盲指）决定",
+                "21. 【机制斩杀】必须依靠地形（如坑洞）或流血机制击杀首领", "22. 【刮痧疗法】禁止编入任何面板攻击力超过 800 的干员",
+                "23. 【全随机】所有上阵干员必须由闭眼随机点击选取", "24. 【禁术禁狙】禁止编入任何术师与狙击干员",
+                "25. 【特殊输出】只能使用侦察兵/陷阱师/召唤物作为核心输出", "26. 【费用膨胀】全队所有干员的初始部署费用必须在 20 以上",
+                "27. 【医疗主C】只能使用医疗干员（含异格）作为唯一输出", "28. 【技能盲开】干员技能一旦冷却完毕必须在3秒内开启",
+                "29. 【裸装上阵】禁用所有模组；肉鸽模式禁止拿任何藏品", "30. 【阵营孤儿】全队干员必须隶属于完全不同的阵营背景"
+            ],
+            banned: [
+                "玛恩纳", "史尔特尔", "维什戴尔", "水月", "缄默德克萨斯", 
+                "麒麟R夜刀", "黍", "伊内丝", "提丰", "塑心", "Logos", 
+                "纯烬艾雅法拉", "假日威龙陈", "耀骑士临光", "百炼嘉维尔",
+                "令", "浊心斯卡蒂", "塞雷娅", "焰影苇草", "伊芙利特", 
+                "银灰", "能天使", "风笛", "琴柳", "仇白", "锏", "左乐",
+                "妮芙", "重岳", "号角", "凯尔希", "铃兰",
+                "乌尔比安", "佩佩", "娜仁图亚", "荒芜拉普兰德", "弑君者",
+                "余 (25春节)", "烛煌", "斩业星熊", "凛御银灰", "圣聆初雪"
+            ]
+        };
+
+        let currentMode = "easy";
+
+        // 切换模式逻辑
+        const modeBtns = document.querySelectorAll('.mode-btn');
+        const mainPanel = document.getElementById('main-panel');
+        const labelRule = document.getElementById('label-rule');
+
+        modeBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                modeBtns.forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                currentMode = e.target.getAttribute('data-mode');
+
+                if(currentMode === 'hard') {
+                    mainPanel.classList.add('hard-mode-ui');
+                    labelRule.innerHTML = `<span>></span> EXTREME_RULE<br>&nbsp;&nbsp;极限协议:`;
+                } else {
+                    mainPanel.classList.remove('hard-mode-ui');
+                    labelRule.innerHTML = `<span>></span> BASIC_RULE<br>&nbsp;&nbsp;基础协议:`;
+                }
+            });
+        });
+
+        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&*+/\\";
+        function scrambleText(element, finalWord, iterations = 20) {
+            let currentIteration = 0;
+            element.style.color = "#fff";
+
+            const interval = setInterval(() => {
+                let scrambled = "";
+                for (let i = 0; i < finalWord.length; i++) {
+                    if (finalWord[i] === " " || finalWord[i] === "/" || finalWord[i] === "【" || finalWord[i] === "】" || finalWord[i] === "(" || finalWord[i] === ")" || finalWord[i] === ".") {
+                        scrambled += finalWord[i]; 
+                    } else if (Math.random() < currentIteration / iterations) {
+                        scrambled += finalWord[i];
+                    } else {
+                        scrambled += chars[Math.floor(Math.random() * chars.length)];
+                    }
+                }
+                element.innerText = scrambled;
+
+                currentIteration++;
+                if (currentIteration > iterations) {
+                    clearInterval(interval);
+                    element.innerText = finalWord;
+                    element.style.color = ""; 
+                }
+            }, 40);
+        }
+
+        function getRandomItem(array) {
+            return array[Math.floor(Math.random() * array.length)];
+        }
+
+        function getUniqueItems(array, count) {
+            const shuffled = [...array].sort(() => 0.5 - Math.random());
+            return shuffled.slice(0, count);
+        }
+
+        // 生成按钮事件
+        document.getElementById('generate-btn').addEventListener('click', () => {
+            const mapEl = document.getElementById('val-map');
+            const ruleEl = document.getElementById('val-rule');
+            const banEl = document.getElementById('val-ban');
+
+            const targetMap = getRandomItem(databases.maps);
+            const targetRule = currentMode === 'easy' ? getRandomItem(databases.easyRules) : getRandomItem(databases.hardRules);
+            const banList = getUniqueItems(databases.banned, 10).join(" / ");
+
+            scrambleText(mapEl, targetMap, 15);
+            scrambleText(ruleEl, targetRule, 20);
+            scrambleText(banEl, banList, 30);
+        });
+    </script>
+</body>
+</html>
